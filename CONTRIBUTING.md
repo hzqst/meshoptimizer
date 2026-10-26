@@ -2,7 +2,7 @@ Thanks for deciding to contribute to meshoptimizer! These guidelines will try to
 
 ## Questions
 
-If you have a question regarding the library usage, please [open a GitHub issue](https://github.com/zeux/meshoptimizer/issues/new).
+If you have a question regarding the library usage, please [create a GitHub discussion](https://github.com/zeux/meshoptimizer/discussions/new/choose).
 Some questions just need answers, but it's nice to keep them for future reference in case other people want to know the same thing.
 Some questions help improve the library interface or documentation by inspiring future changes.
 
@@ -15,9 +15,8 @@ Of course, feel free to [create a pull request](https://help.github.com/articles
 
 ## Features
 
-New algorithms and improvements to existing algorithms are always welcome; you can open an issue or make the change yourself and submit a pull request.
+New algorithms and improvements to existing algorithms are always welcome; please open an issue describing an improvement you'd like to see or make before opening a pull request.
 
-For major features, consider opening an issue describing an improvement you'd like to see or make before opening a pull request.
 This will give us a chance to discuss the idea before implementing it - some algorithms may not be easy to integrate into existing programs, may not be robust to arbitrary meshes or may be expensive to run or implement/maintain, so a discussion helps make sure these don't block the algorithm development.
 
 ## Code style
@@ -29,17 +28,16 @@ As for naming conventions, this library uses `snake_case` for variables, `lowerC
 
 ## Dependencies
 
-Please note that this library uses C89 interface for all APIs and a C++98 implementation - C++11 features can not be used.
-This choice is made to maximize compatibility to make sure that any toolchain, including legacy proprietary gaming console toolchains, can compile this code.
-
+Please note that this library uses C89 interface for all APIs and a C++11 implementation.
 Additionally, the library code has zero external dependencies, does not depend on STL and does not use RTTI or exceptions.
-This, again, maximizes compatibility and makes sure the library can be used in environments where STL use is discouraged or prohibited, as well as maximizing runtime performance and minimizing compilation times.
+This maximizes compatibility and makes sure the library can be used in environments where STL use is discouraged or prohibited, as well as maximizing runtime performance and minimizing compilation times.
 
-The demo program uses STL since it serves as an example of usage and as a test harness, not as production-ready code.
+gltfpack and demo code (tests, `clusterlod.h`) use memory-friendly STL containers like `std::vector` when appropriate, which does not affect the library users.
+gltfpack additionally vendors `cgltf` and `fast_obj` dependencies, and can be optionally compiled against externally provided `basis_universal` or `libwebp`.
 
 ## Testing
 
-All pull requests will run through a continuous integration pipeline using GitHub Actions that will run the built-in unit tests and integration tests on Windows, macOS and Linux with gcc, clang and msvc compilers.
+All pull requests will run through a continuous integration pipeline using GitHub Actions that will run the built-in unit tests and integration tests on Windows, macOS and Linux with GCC, Clang and MSVC compilers.
 You can run the tests yourself using `make test` or building the demo program with `cmake -DBUILD_DEMO=ON` and running it.
 
 Unit tests can be found in `demo/tests.cpp` and functional tests - in `demo/main.cpp`; when making code changes please try to make sure they are covered by an existing test or add a new test accordingly.
@@ -47,7 +45,7 @@ Unit tests can be found in `demo/tests.cpp` and functional tests - in `demo/main
 ## Documentation
 
 Documentation for this library resides in the `meshoptimizer.h` header, with examples as part of a usage manual available in `README.md`.
-Changes to documentation are always welcome and should use issues/pull requests as outlined above; please note that `README.md` only contains documentation for stable algorithms, as experimental algorithms may change the interface without concern for backwards compatibility.
+Changes to documentation are always welcome and should use issues/pull requests as outlined above; please note that `README.md` may omit documentation for experimental algorithms as they may change the interface without concern for backwards compatibility.
 
 ## Sensitive communication
 
@@ -58,3 +56,7 @@ If you prefer to not disclose the issues or information relevant to the issue su
 Any code you submit will become part of the repository and be distributed under the [meshoptimizer license](https://github.com/zeux/meshoptimizer/blob/master/LICENSE.md). By submitting code to the project you agree that the code is your work and that you can give it to the project.
 
 You also agree by submitting your code that you grant all transferrable rights to the code to the project maintainer, including for example re-licensing the code, modifying the code, and distributing it in source or binary forms. Specifically, this includes a requirement that you assign copyright to the project maintainer.
+
+## AI
+
+AI-generated issues or pull requests (including pull request descriptions), will be closed. Repeat submissions may result in a ban.

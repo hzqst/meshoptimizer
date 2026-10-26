@@ -26,7 +26,7 @@ jobs:
     env:
       werror: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: work around ASLR+ASAN compatibility
         run: sudo sysctl -w vm.mmap_rnd_bits=28
         if: matrix.os.name == 'ubuntu'
@@ -61,7 +61,7 @@ jobs:
     name: ${{matrix.arch.name}}
     runs-on: ${{matrix.arch.runner}}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: cmake configure
         run: cmake . -DMESHOPT_BUILD_DEMO=ON -DMESHOPT_BUILD_GLTFPACK=ON -DMESHOPT_WERROR=ON -DCMAKE_MSVC_RUNTIME_LIBRARY="MultiThreaded$<$<CONFIG:Debug>:Debug>" -A ${{matrix.arch.arch}}
       - name: cmake test
@@ -75,8 +75,8 @@ jobs:
   nodejs:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '16'
       - name: test decoder
@@ -89,20 +89,32 @@ jobs:
         run: node js/meshopt_simplifier.test.js
       - name: test clusterizer
         run: node js/meshopt_clusterizer.test.js
+      - name: test tangents
+        run: node js/meshopt_tangents.test.js
+      - name: check typescript declarations
+        run: npx --yes -p typescript@6 tsc --noEmit --moduleResolution node16 --module node16 --strict js/index.d.ts
       - name: check es5
         run: |
           npm install -g es-check@7.2.1
-          npx es-check --module es5 js/meshopt_decoder.js js/meshopt_encoder.js js/meshopt_simplifier.js js/meshopt_clusterizer.js
+          npx es-check --module es5 js/meshopt_decoder.mjs js/meshopt_encoder.js js/meshopt_simplifier.js js/meshopt_clusterizer.js js/meshopt_tangents.js
           npx es-check --module es2020 gltf/library.js
 
   gltfpack:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           repository: KhronosGroup/glTF-Sample-Assets
           path: glTF-Sample-Assets
+      - uses: actions/checkout@v6
+        with:
+          repository: BabylonJS/Assets
+          ref: 5945275256c46909678d49fe68eb2683c44294ed
+          path: BabylonJS-Assets
+          sparse-checkout: splats/Unicorn_Stuffy.ply
+          sparse-checkout-cone-mode: false
+          filter: blob:none
       - name: work around ASLR+ASAN compatibility
         run: sudo sysctl -w vm.mmap_rnd_bits=28
       - name: make
@@ -117,12 +129,17 @@ jobs:
           find glTF-Sample-Assets -name '*.gltfpack.gltf' | xargs -P 2 -L 1 -d '\n' ./gltf_validator -r -a
         env:
           VALIDATOR: https://github.com/KhronosGroup/glTF-Validator/releases/download/2.0.0-dev.3.10/gltf_validator-2.0.0-dev.3.10-linux64.tar.xz
+      - name: test splats
+        run: |
+          for args in "" "-noq" "-c -gsd 3" "-cc"; do
+            ./gltfpack -i BabylonJS-Assets/splats/Unicorn_Stuffy.ply -o splats.glb $args
+          done
 
   gltfpack-js:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-node@v4
+      - uses: actions/checkout@v6
+      - uses: actions/setup-node@v6
         with:
           node-version: '18'
       - name: install wasi
@@ -130,7 +147,7 @@ jobs:
           curl -sL https://github.com/WebAssembly/wasi-sdk/releases/download/wasi-sdk-$VERSION/wasi-sdk-$VERSION.0-x86_64-linux.deb > wasi-sdk.deb
           sudo dpkg -i wasi-sdk.deb
         env:
-          VERSION: 25
+          VERSION: 32
       - name: build
         run: |
           make -j2 -B gltf/library.wasm js
@@ -144,17 +161,18 @@ jobs:
           node js/meshopt_encoder.test.js
           node js/meshopt_simplifier.test.js
           node js/meshopt_clusterizer.test.js
+          node js/meshopt_tangents.test.js
 
   gltfpack-full:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           repository: zeux/basis_universal
           ref: gltfpack
           path: basis_universal
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: webmproject/libwebp
           ref: 1.6.0
@@ -167,16 +185,24 @@ jobs:
   gltfpack-coverage:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
+      - uses: actions/checkout@v6
         with:
           repository: zeux/basis_universal
           ref: gltfpack
           path: basis_universal
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           repository: KhronosGroup/glTF-Sample-Assets
           path: glTF-Sample-Assets
+      - uses: actions/checkout@v6
+        with:
+          repository: BabylonJS/Assets
+          ref: 5945275256c46909678d49fe68eb2683c44294ed
+          path: BabylonJS-Assets
+          sparse-checkout: splats/Unicorn_Stuffy.ply
+          sparse-checkout-cone-mode: false
+          filter: blob:none
       - name: build basisu
         run: |
           cd basis_universal
@@ -197,6 +223,8 @@ jobs:
           ./gltfpack -test glTF-Sample-Assets/Models/ABeautifulGame/glTF/ABeautifulGame.gltf -mi -c
           ./gltfpack -test glTF-Sample-Assets/Models/ABeautifulGame/glTF/ABeautifulGame.gltf -kn -km -ke
           ./gltfpack -test glTF-Sample-Assets/Models/ABeautifulGame/glTF/ABeautifulGame.gltf -si 0.1 -sp
+          ./gltfpack -test glTF-Sample-Assets/Models/ABeautifulGame/glTF/ABeautifulGame.gltf -si 0.1 -sv
+          ./gltfpack -test glTF-Sample-Assets/Models/Fox/glTF/Fox.gltf -gn 30 -si 0.5 -sv
           ./gltfpack -test glTF-Sample-Assets/Models/BoxTextured/glTF/BoxTextured.gltf -vpf -vtf -c
           ./gltfpack -test glTF-Sample-Assets/Models/BoxTextured/glTF/BoxTextured.gltf -vpf -vtf -cc
           ./gltfpack -test glTF-Sample-Assets/Models/BoxTextured/glTF/BoxTextured.gltf -tc
@@ -205,10 +233,15 @@ jobs:
           ./gltfpack -test glTF-Sample-Assets/Models/BoxTextured/glTF/BoxTextured.gltf -tc -ts 0.5 -tl 64
           ./gltfpack -test glTF-Sample-Assets/Models/BoxTextured/glTF/BoxTextured.gltf -tc color -tfy -tq 4 -tj 1
           ./gltfpack -test glTF-Sample-Assets/Models/CesiumMan/glTF/CesiumMan.gltf -tu -ts 0.6 -tp -ar 0
+          ./gltfpack -test glTF-Sample-Assets/Models/CesiumMan/glTF/CesiumMan.gltf -gt -kv
           ./gltfpack -test glTF-Sample-Assets/Models/PrimitiveModeNormalsTest/glTF/PrimitiveModeNormalsTest.gltf -si 0.5
           ./gltfpack -test glTF-Sample-Assets/Models/VertexColorTest/glTF/VertexColorTest.gltf -si 0.5 -vc 12
           ./gltfpack -test glTF-Sample-Assets/Models/SimpleMeshes/glTF/SimpleMeshes.gltf -mm
           ./gltfpack -test glTF-Sample-Assets/Models/SimpleMeshes/glTF/SimpleMeshes.gltf -kn
+          ./gltfpack -test BabylonJS-Assets/splats/Unicorn_Stuffy.ply
+          ./gltfpack -test BabylonJS-Assets/splats/Unicorn_Stuffy.ply -noq
+          ./gltfpack -test BabylonJS-Assets/splats/Unicorn_Stuffy.ply -c -gsd 3
+          ./gltfpack -test BabylonJS-Assets/splats/Unicorn_Stuffy.ply -cc
           echo newmtl Leather > demo/pirate.mtl
           echo map_Kd leather.jpg >> demo/pirate.mtl
           echo map_d leather.jpg >> demo/pirate.mtl
@@ -219,15 +252,20 @@ jobs:
           ./gltfpack -h || true
           ./gltfpack -i glTF-Sample-Assets/Models/BoxTextured/glTF/BoxTextured.gltf -o box.glb -vv -r box.json
           ./gltfpack -i glTF-Sample-Assets/Models/BoxTextured/glTF/BoxTextured.gltf -o box.gltf -cf
+          ./gltfpack -i BabylonJS-Assets/splats/Unicorn_Stuffy.ply -o splats.glb -c -vv
       - name: upload coverage
         run: |
           find . -type f -name '*.gcno' -exec gcov -p {} +
           sed -i -e "s/#####\(.*\)\(\/\/ unreachable.*\)/    -\1\2/" *.gcov
           bash <(curl -s https://codecov.io/bash) -f './gltf*.gcov' -X search -t ${{secrets.CODECOV_TOKEN}} -B ${{github.ref}}
 
-  macos-iphone:
-    runs-on: macos-14
+  android-armv7:
+    runs-on: ubuntu-latest
+    env:
+      werror: 1
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: make
-        run: make -j2 config=iphone
+        run: |
+          NDKBIN=$ANDROID_NDK_LATEST_HOME/toolchains/llvm/prebuilt/linux-x86_64/bin
+          make -j2 config=release CC=$NDKBIN/armv7a-linux-androideabi21-clang CXX=$NDKBIN/armv7a-linux-androideabi21-clang++
